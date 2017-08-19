@@ -259,14 +259,36 @@ void parse_headers(const char *filename)
     fclose(f);
 }
 
+void usage(const char *appname)
+{
+    fprintf(stderr, "GCodesim Copyright (C) 2017 Gerhard Gappmeier\n");
+    fprintf(stderr, "This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.\n");
+    fprintf(stderr, "This is free software, and you are welcome to redistribute it\n");
+    fprintf(stderr, "under certain conditions; type `show c' for details.\n\n");
+    fprintf(stderr, "Usage: %s [options] file...\n", appname);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -h: Shows this help\n");
+    fprintf(stderr, "  -r: Specifies size of one voxel in mm (default=0.1mm)\n");
+    fprintf(stderr, "  -W: Specifies PCB width in mm (default=100mm)\n");
+    fprintf(stderr, "  -H: Specifies PCB height in mm (default=80mm)\n");
+    fprintf(stderr, "  -r: Specifies size of one voxel in mm (default=0.1mm)\n");
+    fprintf(stderr, "  -t: Specifies tool index to use (if no tool selection is in the Gcode)\n");
+    fprintf(stderr, "  -o: Specifies output filname, to rewrite the given GCode files\n");
+    fprintf(stderr, "  -x: Applies given offset in mm at X axis\n");
+    fprintf(stderr, "  -y: Applies given offset in mm at Y axis\n");
+    fprintf(stderr, "  -z: Applies given offset in mm at Z axis\n");
+    fprintf(stderr, "  -m: PCBGcode mirror compensation. Makes the coordinates positive by adding the PCB width.\n");
+    fprintf(stderr, "Example: ./gcodesim -W 30 -m -x-5 -o drill.gcode ~/eagle/isp_adapter/isp_adapter.bot.drill.gcode\n");
+}
+
 int main(int argc, char *argv[])
 {
     int ret;
     char filename[PATH_MAX] = "test.gcode";
     char ofilename[PATH_MAX] = "output.gcode";
     char toolfilename[PATH_MAX] = "";
-    float w = 23; /* mm */
-    float h = 23; /* mm */
+    float w = 100; /* mm */
+    float h = 80; /* mm */
     float t = 1.6; /* mm */
     float offset_x = 0;
     float offset_y = 0;
@@ -277,12 +299,16 @@ int main(int argc, char *argv[])
     int opt;
     int tool;
 
-    while ((opt = getopt(argc, argv, "w:h:r:mt:x:y:z:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hW:H:r:mt:x:y:z:o:")) != -1) {
         switch (opt) {
-        case 'w':
+        case 'h':
+            usage(argv[0]);
+            exit(0);
+            break;
+        case 'W':
             w = atoi(optarg);
             break;
-        case 'h':
+        case 'H':
             h = atoi(optarg);
             break;
         case 'x':
@@ -316,9 +342,15 @@ int main(int argc, char *argv[])
             gcode_set_output(ofilename);
             break;
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-w with in mm] [-h height in mm] filename\n", argv[0]);
+            usage(argv[0]);
             exit(EXIT_FAILURE);
         }
+    }
+
+    while (argc <= optind) {
+        fprintf(stderr, "error: No filename was given.\n");
+        usage(argv[0]);
+        exit(EXIT_FAILURE);
     }
 
     gcode_set_offset(offset_x, offset_y, offset_z);
@@ -328,7 +360,7 @@ int main(int argc, char *argv[])
     z = t / g_resolution;
     ret = voxel_space_init(&g_workpart, x, y, z);
     if (ret != 0) {
-        fprintf(stderr, "Failed to init voxel space.\n");
+        fprintf(stderr, "error: Failed to init voxel space.\n");
         exit(EXIT_FAILURE);
     }
     printf("Initialized voxel space [%u,%u,%u]: %u MB\n", x, y, z, (unsigned int)(g_workpart.size / 1024));
