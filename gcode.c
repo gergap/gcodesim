@@ -23,9 +23,9 @@
 #define sqr(x) (x)*(x)
 
 static struct gcode_ctx g_ctx;
-FILE *g_output = NULL;
-const char *g_ofilename = NULL;
-float g_offset_x, g_offset_y, g_offset_z;
+static FILE *g_output = NULL;
+static const char *g_ofilename = NULL;
+static float g_offset_x, g_offset_y, g_offset_z;
 
 void gvector_add(struct gvector *res, struct gvector *a, struct gvector *b)
 {
@@ -67,6 +67,7 @@ static void gcode_send_pos_cb(void)
     // add offset
     tmp.pos.x += g_offset_x;
     tmp.pos.y += g_offset_y;
+    tmp.pos.z += g_offset_z;
 
     if (g_ctx.newpos_cb) g_ctx.newpos_cb(&tmp);
 }
