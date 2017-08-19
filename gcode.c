@@ -93,9 +93,9 @@ static void gcode_send_pos_cb(void)
     struct gcode_ctx tmp = g_ctx;
 
     // add offset
-    tmp.pos.x += g_offset_x;
-    tmp.pos.y += g_offset_y;
-    tmp.pos.z += g_offset_z;
+    //tmp.pos.x += g_offset_x;
+    //tmp.pos.y += g_offset_y;
+    //tmp.pos.z += g_offset_z;
 
     if (g_ctx.newpos_cb) g_ctx.newpos_cb(&tmp);
 }
