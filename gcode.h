@@ -42,6 +42,7 @@ void gcode_ctx_init(struct gcode_ctx *ctx);
 int gcode_parse(const char *filename, void (*newpos_cb)(struct gcode_ctx *ctx), void (*toolchange_cb)(unsigned int tool));
 void gcode_set_output(const char *filename);
 void gcode_set_offset(float x, float y, float z);
+void gcode_verbose(void);
 
 #endif /* end of include guard: GCODE_H_MQ1JX08Y */
 

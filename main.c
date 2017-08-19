@@ -268,6 +268,7 @@ void usage(const char *appname)
     fprintf(stderr, "Usage: %s [options] file...\n", appname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  -h: Shows this help\n");
+    fprintf(stderr, "  -v: Verbose output\n");
     fprintf(stderr, "  -r: Specifies size of one voxel in mm (default=0.1mm)\n");
     fprintf(stderr, "  -W: Specifies PCB width in mm (default=100mm)\n");
     fprintf(stderr, "  -H: Specifies PCB height in mm (default=80mm)\n");
@@ -299,7 +300,7 @@ int main(int argc, char *argv[])
     int opt;
     int tool;
 
-    while ((opt = getopt(argc, argv, "hW:H:r:mt:x:y:z:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hW:H:r:mt:x:y:z:o:v")) != -1) {
         switch (opt) {
         case 'h':
             usage(argv[0]);
@@ -340,6 +341,9 @@ int main(int argc, char *argv[])
         case 'o':
             strncpy(ofilename, optarg, sizeof(ofilename));
             gcode_set_output(ofilename);
+            break;
+        case 'v':
+            gcode_verbose();
             break;
         default: /* '?' */
             usage(argv[0]);

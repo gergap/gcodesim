@@ -18,6 +18,7 @@
 #include "gcode.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <math.h>
 
 #define sqr(x) (x)*(x)
@@ -26,6 +27,33 @@ static struct gcode_ctx g_ctx;
 static FILE *g_output = NULL;
 static const char *g_ofilename = NULL;
 static float g_offset_x, g_offset_y, g_offset_z;
+static int   g_verbose = 0;
+
+/**
+ * Verbose output.
+ *
+ * @param verbosity level
+ * @param fmt Printf format specifier.
+ * @param ...
+ */
+static void verbose(int level, const char *fmt, ...)
+{
+    va_list ap;
+
+    if (g_verbose < level) return;
+
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+}
+
+/**
+ * Increase verbose output level.
+ */
+void gcode_verbose(void)
+{
+    g_verbose++;
+}
 
 void gvector_add(struct gvector *res, struct gvector *a, struct gvector *b)
 {
@@ -87,7 +115,7 @@ int gcode_linear_move(struct gvector *newpos)
 
     //printf("len=%f\n", len);
     num_steps = len / step_len;
-    printf("num_steps=%u\n", num_steps);
+    verbose(2, "num_steps=%u\n", num_steps);
 
     if (num_steps > 0) {
         for (i = 0; i < num_steps-1; ++i) {
@@ -163,7 +191,7 @@ int gcode_parse_gcode(const char *line)
             g_ctx.feedrate = val;
             APPEND(" F%.2f", val);
         }
-        printf("Linear move to X=%.2f, Y=%.2f, Z=%.2f\n",
+        verbose(2, "Linear move to X=%.2f, Y=%.2f, Z=%.2f\n",
                 newpos.x, newpos.y, newpos.z);
         gcode_linear_move(&newpos);
         if (g_ctx.pos_absolute) {
@@ -178,23 +206,23 @@ int gcode_parse_gcode(const char *line)
     case 3: /* arc */
         break;
     case 4: /* Dwell */
-        printf("Pausing ignored. We want to do a quick simulation.\n");
+        verbose(1, "Pausing ignored. We want to do a quick simulation.\n");
         break;
     case 20: /* inch */
-        printf("Units set to inch\n");
+        verbose(1, "Units set to inch\n");
         break;
     case 21: /* mm */
-        printf("Units set to mm\n");
+        verbose(1, "Units set to mm\n");
         break;
     case 28: /* homeing */
-        printf("Homeing\n");
+        verbose(1, "Homeing\n");
         break;
     case 90: /* position absolute */
-        printf("Positioning absolute\n");
+        verbose(1, "Positioning absolute\n");
         g_ctx.pos_absolute = true;
         break;
     case 91: /* position relative */
-        printf("Positioning relative\n");
+        verbose(1, "Positioning relative\n");
         g_ctx.pos_absolute = false;
         break;
     case 92: /* set position */
@@ -224,7 +252,7 @@ int gcode_parse_gcode(const char *line)
             }
         }
         g_ctx.pos = newpos;
-        printf("Setting position to X=%.2f, Y=%.2f, Z=%.2f\n",
+        verbose(1, "Setting position to X=%.2f, Y=%.2f, Z=%.2f\n",
                 newpos.x, newpos.y, newpos.z);
         if (g_ctx.pos_absolute) {
             /* add offset */
@@ -235,7 +263,7 @@ int gcode_parse_gcode(const char *line)
         }
         break;
     default:
-        printf("ignoring: %s\n", line);
+        verbose(1, "ignoring: %s\n", line);
         break;
     }
 
@@ -261,25 +289,25 @@ int gcode_parse_mcode(const char *line)
 
     switch (code) {
     case 2: /* program off */
-        printf("program off\n");
+        verbose(1, "program off\n");
         break;
     case 3: /* spindle on CW */
-        printf("spindle on CW\n");
+        verbose(1, "spindle on CW\n");
         break;
     case 4: /* spindle on CCW */
-        printf("spindle on CCW\n");
+        verbose(1, "spindle on CCW\n");
         break;
     case 5: /* spindle off */
-        printf("spindle off\n");
+        verbose(1, "spindle off\n");
         break;
     case 6: /* tool chain */
         ret = sscanf(line, "M%u T%u", &code, &tool);
         if (ret != 2) goto error;
-        printf("select tool %u\n", tool);
+        verbose(1, "select tool %u\n", tool);
         if (g_ctx.toolchange_cb) g_ctx.toolchange_cb(tool);
         break;
     default:
-        printf("ignoring: %s\n", line);
+        verbose(1, "ignoring: %s\n", line);
         break;
     }
 
@@ -303,7 +331,7 @@ int gcode_parse_tcode(const char *line)
     ret = sscanf(line, "T%u", &code);
     if (ret != 1) goto error;
 
-    printf("select tool %u\n", code);
+    verbose(1, "select tool %u\n", code);
 
     if (g_output) {
         fprintf(g_output, "%s", line);
@@ -340,7 +368,7 @@ int gcode_parse_line(const char *line)
         if (g_output) fprintf(g_output, "\n");
         break;
     default:
-        printf("Unknown code: %s\n", line);
+        verbose(1, "Unknown code: %s\n", line);
         ret = -1;
         break;
     }
