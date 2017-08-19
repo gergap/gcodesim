@@ -28,6 +28,16 @@ static FILE *g_output = NULL;
 static const char *g_ofilename = NULL;
 static float g_offset_x, g_offset_y, g_offset_z;
 static int   g_verbose = 0;
+static int   g_header_written = 0;
+
+/* Write custom header after G90 has been detected. */
+static const char g_custom_header[] = 
+"\n(Custom header for Mendel90)\n"
+"G1 Z3 F200 (move to save Z height)\n"
+"G28 X Y (home XY)\n"
+"G00 X150.0000 Y10.0000 F5000 (move to right bottom edge of PCB)\n"
+"G92 X0 Y0 (set this position as new origin)\n"
+"(Custom header end)\n\n";
 
 /**
  * Verbose output.
@@ -269,6 +279,10 @@ int gcode_parse_gcode(const char *line)
 
     if (g_output && code != 0 && code != 1 && code != 92) {
         fprintf(g_output, "%s", line);
+        if (code == 90 && g_header_written == 0) {
+            fprintf(g_output, "%s", g_custom_header);
+            g_header_written = 1;
+        }
     }
 
     return ret;
