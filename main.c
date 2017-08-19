@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
         g_file_index++;
     }
     voxel_space_to_pgm(&g_workpart, "workpart.pgm");
-    voxel_space_to_d3f(&g_workpart, "workpart.d3f");
+    //voxel_space_to_d3f(&g_workpart, "workpart.d3f");
 
     voxel_space_clear(&g_workpart);
     voxel_space_clear(&g_tool1);
