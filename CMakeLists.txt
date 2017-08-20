@@ -1,5 +1,5 @@
 project(gcodesim C)
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.2)
 
 option(ENABLE_POVRAY "Enables POVray output for rendering simulation." OFF)
 if (ENABLE_POVRAY)
