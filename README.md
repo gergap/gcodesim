@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/gergap/gcodesim.svg?branch=master)](https://travis-ci.org/gergap/gcodesim.svg?branch=master)
+
 # gcodesim
 GCode simulator
 
