@@ -56,7 +56,7 @@ void create_etch_tool(struct voxel_space *tool, float diameter)
         fprintf(stderr, "Failed to init voxel space.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Initialized tool voxel space [%u,%u,%u]: %u MB\n", w, h, t, (unsigned int)(tool->size / 1024));
+    printf("Initialized tool voxel space [%u,%u,%u]: %u KB\n", w, h, t, (unsigned int)(tool->size / 1024));
 
     for (z = 0; z < tool->thickness; ++z) {
         tool_r = z * g_resolution - 0.1;
@@ -96,7 +96,7 @@ void create_drill_tool(struct voxel_space *tool, float diameter)
         fprintf(stderr, "Failed to init voxel space.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Initialized tool voxel space [%u,%u,%u]: %u MB\n", w, h, t, (unsigned int)(tool->size / 1024));
+    printf("Initialized tool voxel space [%u,%u,%u]: %u KB\n", w, h, t, (unsigned int)(tool->size / 1024));
 
     tool_r = sqr(diameter/2);
     for (z = 0; z < tool->thickness; ++z) {
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "error: Failed to init voxel space.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Initialized voxel space [%u,%u,%u]: %u MB\n", x, y, z, (unsigned int)(g_workpart.size / 1024));
+    printf("Initialized voxel space [%u,%u,%u]: %u MB\n", x, y, z, (unsigned int)(g_workpart.size / 1024 / 1024));
 
     //create_etch_tool(&g_tool1, g_tool1_d);
     //create_drill_tool(&g_tool1, 0.15);
