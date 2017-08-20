@@ -19,7 +19,6 @@
 #include <string.h>
 #include <limits.h>
 #include <getopt.h>
-#include <libgen.h>
 #include "voxelspace.h"
 #include "gcode.h"
 
@@ -276,6 +275,7 @@ void usage(const char *appname)
     fprintf(stderr, "  -r: Specifies size of one voxel in mm (default=0.1mm)\n");
     fprintf(stderr, "  -t: Specifies tool index to use (if no tool selection is in the Gcode)\n");
     fprintf(stderr, "  -o: Specifies output filname, to rewrite the given GCode files\n");
+    fprintf(stderr, "  -c: Load custom header to insert in output file\n");
     fprintf(stderr, "  -x: Applies given offset in mm at X axis\n");
     fprintf(stderr, "  -y: Applies given offset in mm at Y axis\n");
     fprintf(stderr, "  -z: Applies given offset in mm at Z axis\n");
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
     int opt;
     int tool;
 
-    while ((opt = getopt(argc, argv, "hW:H:r:mt:x:y:z:o:v")) != -1) {
+    while ((opt = getopt(argc, argv, "hW:H:r:mt:x:y:z:o:vc:")) != -1) {
         switch (opt) {
         case 'h':
             usage(argv[0]);
@@ -343,10 +343,9 @@ int main(int argc, char *argv[])
         case 'o':
             strncpy(ofilename, optarg, sizeof(ofilename));
             gcode_set_output(ofilename);
-
-            strncpy(customfilename, argv[0], sizeof(customfilename));
-            dirname(customfilename);
-            strncat(customfilename, "/custom.gcode", sizeof(customfilename) - strlen(customfilename) - 1);
+            break;
+        case 'c':
+            strncpy(customfilename, optarg, sizeof(customfilename));
             ret = gcode_load_custom_header(customfilename);
             if (ret != 0) {
                 fprintf(stderr, "error: loading custom header '%s' failed.\n", customfilename);
