@@ -203,7 +203,7 @@ void gcode_toolchange_callback(unsigned int tool)
  *
  * @param filename
  */
-void parse_headers(const char *filename)
+int parse_headers(const char *filename)
 {
     char line[1024];
     FILE *f = fopen(filename, "r");
@@ -211,7 +211,7 @@ void parse_headers(const char *filename)
     int n, tool;
     float diameter;
 
-    if (f == NULL) return;
+    if (f == NULL) return -1;
 
     while (fgets(line, sizeof(line), f)) {
         if (line[0] != '(') break;
@@ -257,6 +257,8 @@ void parse_headers(const char *filename)
     }
 
     fclose(f);
+
+    return 0;
 }
 
 void usage(const char *appname)
@@ -393,7 +395,11 @@ int main(int argc, char *argv[])
     g_file_index = 1;
     while (argc > optind) {
         strncpy(filename, argv[optind++], sizeof(filename));
-        parse_headers(filename);
+        ret = parse_headers(filename);
+        if (ret != 0) {
+            fprintf(stderr, "error: could not open '%s'.\n", filename);
+            exit(EXIT_FAILURE);
+        }
 
 #ifdef POVRAY_ANIM_OUTPUT
         /* export tools for this file */
