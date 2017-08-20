@@ -10,3 +10,5 @@ set(SOURCES main.c voxelspace.c gcode.c)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} m)
+
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
