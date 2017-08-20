@@ -37,6 +37,8 @@ static const char g_custom_header[] =
 "G28 X Y (home XY)\n"
 "G00 X150.0000 Y10.0000 F5000 (move to right bottom edge of PCB)\n"
 "G92 X0 Y0 (set this position as new origin)\n"
+"G29\n"
+"G4 P10000\n"
 "(Custom header end)\n\n";
 
 /**
