@@ -19,6 +19,7 @@
 #include <string.h>
 #include <limits.h>
 #include <getopt.h>
+#include <libgen.h>
 #include "voxelspace.h"
 #include "gcode.h"
 
@@ -288,6 +289,7 @@ int main(int argc, char *argv[])
     char filename[PATH_MAX] = "test.gcode";
     char ofilename[PATH_MAX] = "output.gcode";
     char toolfilename[PATH_MAX] = "";
+    char customfilename[PATH_MAX] = "";
     float w = 100; /* mm */
     float h = 80; /* mm */
     float t = 1.6; /* mm */
@@ -341,6 +343,15 @@ int main(int argc, char *argv[])
         case 'o':
             strncpy(ofilename, optarg, sizeof(ofilename));
             gcode_set_output(ofilename);
+
+            strncpy(customfilename, argv[0], sizeof(customfilename));
+            dirname(customfilename);
+            strncat(customfilename, "/custom.gcode", sizeof(customfilename) - strlen(customfilename) - 1);
+            ret = gcode_load_custom_header(customfilename);
+            if (ret != 0) {
+                fprintf(stderr, "error: loading custom header '%s' failed.\n", customfilename);
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'v':
             gcode_verbose();

@@ -31,15 +31,7 @@ static int   g_verbose = 0;
 static int   g_header_written = 0;
 
 /* Write custom header after G90 has been detected. */
-static const char g_custom_header[] = 
-"\n(Custom header for Mendel90)\n"
-"G1 Z3 F200 (move to save Z height)\n"
-"G28 X Y (home XY)\n"
-"G00 X150.0000 Y10.0000 F5000 (move to right bottom edge of PCB)\n"
-"G92 X0 Y0 (set this position as new origin)\n"
-"G29\n"
-"G4 P10000\n"
-"(Custom header end)\n\n";
+static char g_custom_header[4096] = "";
 
 /**
  * Verbose output.
@@ -435,6 +427,19 @@ int gcode_parse(const char *filename, void (*newpos_cb)(struct gcode_ctx *ctx), 
 void gcode_set_output(const char *filename)
 {
     g_ofilename = filename;
+}
+
+int gcode_load_custom_header(const char *filename)
+{
+    ssize_t ret;
+    FILE *f = fopen(filename, "r");
+    if (f == NULL) return -1;
+
+    ret = fread(g_custom_header, 1, sizeof(g_custom_header), f);
+
+    fclose(f);
+
+    return 0;
 }
 
 void gcode_set_offset(float x, float y, float z)

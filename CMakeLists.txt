@@ -12,3 +12,4 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} m)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(FILES custom.gcode DESTINATION bin)
