@@ -88,4 +88,29 @@ Use `-h` to show the built-in help:
       -m: PCBGcode mirror compensation. Makes the coordinates positive by adding the PCB width.
     Example: ./gcodesim -W 30 -m -x-5 -o drill.gcode ~/eagle/isp_adapter/isp_adapter.bot.drill.gcode
 
+# Notes on Windows Target
+
+This tool was developed for Linux but can be compiled also for Windows using
+Mingw compiler. This is tested also on Linux and cross-compiling for Windows.
+
+    # produce 64bit binaries for Windows using x86_64-w64-mingw32-gcc on Linux
+    ./build.sh -t mingw64
+    # produce 32bit binaries for Windows using i686-w64-mingw32-gcc on Linux
+    ./build.sh -t mingw32
+
+For compiling a Windows .exe one needs to install the Mingw compiler and
+optionally wine for test execution. The resulting binaries can be copied to
+Windows and should work there. If you don't have wine disable tests by using the
+option `-T`.
+
+In theory it should also work with Mingw on Windows, but I've no Windows,
+so this isn't tested. In this case it should work also without a CMake toolchain
+file (no cross-compilation).
+
+    # build natively on Windows using Mingw
+    export CC=/path/to/gcc
+    ./build.sh
+
+
+Another solution would be to use the new Linux subsystem on Windows 10.
 
