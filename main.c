@@ -21,6 +21,7 @@
 #include <getopt.h>
 #include "voxelspace.h"
 #include "gcode.h"
+#include "version.h"
 
 /* By enabling this define the tool generates output for
  * rendering an animation using POVRay.
@@ -263,7 +264,8 @@ int parse_headers(const char *filename)
 
 void usage(const char *appname)
 {
-    fprintf(stderr, "GCodesim Copyright (C) 2017 Gerhard Gappmeier\n");
+    fprintf(stderr, "GCodesim %s\n", TOOL_VERSION);
+    fprintf(stderr, "Copyright (C) 2017 Gerhard Gappmeier\n");
     fprintf(stderr, "This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.\n");
     fprintf(stderr, "This is free software, and you are welcome to redistribute it\n");
     fprintf(stderr, "under certain conditions; type `show c' for details.\n\n");
