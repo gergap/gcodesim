@@ -18,8 +18,21 @@
 #include "voxelspace.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <limits.h>
-#include <arpa/inet.h>
+#ifdef _WIN32
+/* Building for Windows */
+# ifdef __GNUC__
+   /* with MinGw we can use built-in functions like on Linux */
+#  define htons(x) __builtin_bswap16(x)
+# else
+   /* for Visual Studio (untested) */
+#  include <winsock2.h>
+# endif
+#else
+/* Building for Liunx and other POSIX systems */
+# include <arpa/inet.h> /* for htons */
+#endif
 
 void voxel_pos_set(struct voxel_pos *pos, unsigned int x, unsigned int y, unsigned int z)
 {
