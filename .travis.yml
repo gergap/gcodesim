@@ -2,12 +2,8 @@ language: C
 compiler:
     - gcc
     - clang
-before_script:
-    - mkdir bld
-    - cd bld
-    - cmake -DCMAKE_INSTALL_PREFIX=.. ..
-script:
-    - make
-    - make install
+    - i686-w64-mingw32-gcc
+
+script: ./travis-build.sh
 
 
