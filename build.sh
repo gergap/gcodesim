@@ -14,8 +14,8 @@ MAKE=make
 MAKEOPTS="-j4"
 GENERATOR=
 # Use Ninja
-MAKE=ninja
-GENERATOR=-GNinja
+#MAKE=ninja
+#GENERATOR=-GNinja
 # Unit Testing
 RUN_TESTS=1
 STRIP=0
