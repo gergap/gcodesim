@@ -1,0 +1,13 @@
+# Build configuration for Mingw64
+# This file gets sourced by build.sh to configure cross-compilation
+# Run ./build.sh -t mingw64
+
+# build directory, here all temp objects will be created (out-of-source-build)
+BLDDIR=$PWD/bldMinGw64
+# destination directory for 'make install', this folder can be distributed as
+# binary SDK.
+DISTDIR=$PWD/distMinGw64
+# Compiler toolchain configuration for CMake
+TOOLCHAIN=$PWD/toolchains/mingw/toolchain-x86_64-w64-mingw32.cmake
+# Run tests using wine
+OPTIONS="$OPTIONS -DTESTDRIVER=wine"
