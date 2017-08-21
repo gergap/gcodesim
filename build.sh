@@ -17,7 +17,7 @@ GENERATOR=
 MAKE=ninja
 GENERATOR=-GNinja
 # Unit Testing
-RUN_TESTS=0
+RUN_TESTS=1
 STRIP=0
 
 function usage {
@@ -27,6 +27,8 @@ function usage {
     echo "  -o:    custom CMake options"
     echo "  -d:    sets a different installation prefix"
     echo "  -t:    select target configuration: mingw32"
+    echo "  -T:    disable Testing (BUILD_TESTING=off)"
+    echo "  -R:    disable test execution only"
     echo "  clean: performs a clean build by removing the build directory first"
     echo "  <build_target>: CMake build target like e.g. Nightly, doc, ..."
     echo "    If no build target was given it will be default build all, test,"
@@ -35,7 +37,7 @@ function usage {
 }
 
 # process commandline arguments
-while getopts "m:b:d:t:o:" opt; do
+while getopts "m:b:d:t:o:RT" opt; do
     case $opt in
         m)
             if [ "$OPTARG" == "32" ]; then
@@ -63,6 +65,15 @@ while getopts "m:b:d:t:o:" opt; do
             ;;
         o)
             OPTIONS="$OPTIONS $OPTARG"
+            ;;
+        T)
+            # disable test builds
+            OPTIONS="$OPTIONS -DBUILD_TESTING=off"
+            RUN_TESTS=0
+            ;;
+        R)
+            # disable test execution only
+            RUN_TESTS=0
             ;;
         *)
             usage

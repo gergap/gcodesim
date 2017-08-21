@@ -12,4 +12,33 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} m)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
-install(FILES custom_bottom.gcode custom_top.gcode DESTINATION bin)
+install(FILES gcode/demo.gcode gcode/custom_bottom.gcode gcode/custom_top.gcode DESTINATION bin)
+
+# enable Unit Testing
+include(CTest)
+if (BUILD_TESTING)
+    #############
+    # GOOD Cases:
+    #############
+    # only show help
+    add_test(NAME showhelp
+        COMMAND $<TARGET_FILE:gcodesim> -h
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+    add_test(NAME simpletest
+        COMMAND $<TARGET_FILE:gcodesim> -W30 -H30 demo.gcode
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+    #############
+    # BAD Cases:
+    #############
+    # no file name given
+    add_test(NAME nofile
+        COMMAND $<TARGET_FILE:gcodesim>
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+    set_tests_properties(nofile PROPERTIES WILL_FAIL TRUE)
+    # invalid file name given
+    add_test(NAME invalidfile
+        COMMAND $<TARGET_FILE:gcodesim> invalid_xyz.gcode
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+    set_tests_properties(invalidfile PROPERTIES WILL_FAIL TRUE)
+endif()
+
