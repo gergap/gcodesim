@@ -22,22 +22,22 @@ if (BUILD_TESTING)
     #############
     # only show help
     add_test(NAME showhelp
-        COMMAND $<TARGET_FILE:gcodesim> -h
+        COMMAND ${TESTDRIVER} $<TARGET_FILE:gcodesim> -h
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
     add_test(NAME simpletest
-        COMMAND $<TARGET_FILE:gcodesim> -W30 -H30 demo.gcode
+        COMMAND ${TESTDRIVER} $<TARGET_FILE:gcodesim> -W30 -H30 demo.gcode
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
     #############
     # BAD Cases:
     #############
     # no file name given
     add_test(NAME nofile
-        COMMAND $<TARGET_FILE:gcodesim>
+        COMMAND ${TESTDRIVER} $<TARGET_FILE:gcodesim>
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
     set_tests_properties(nofile PROPERTIES WILL_FAIL TRUE)
     # invalid file name given
     add_test(NAME invalidfile
-        COMMAND $<TARGET_FILE:gcodesim> invalid_xyz.gcode
+        COMMAND ${TESTDRIVER} $<TARGET_FILE:gcodesim> invalid_xyz.gcode
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
     set_tests_properties(invalidfile PROPERTIES WILL_FAIL TRUE)
 endif()

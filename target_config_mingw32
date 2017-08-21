@@ -9,3 +9,5 @@ BLDDIR=$PWD/bldMinGw32
 DISTDIR=$PWD/distMinGw32
 # Compiler toolchain configuration for CMake
 TOOLCHAIN=$PWD/toolchains/mingw/toolchain-i686-pc-mingw32.cmake
+# Run tests using wine
+OPTIONS="$OPTIONS -DTESTDRIVER=wine"
