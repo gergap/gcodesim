@@ -111,6 +111,11 @@ file (no cross-compilation).
     export CC=/path/to/gcc
     ./build.sh
 
+Requirements for building on Windows:
+
+* MinGW compiler for Windows
+* CMake for Windows
+* Git Bash for Windows for execution of build.sh
 
 Another solution would be to use the new Linux subsystem on Windows 10.
 
