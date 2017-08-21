@@ -1,0 +1,11 @@
+# Build configuration for Mingw32
+# This file gets sourced by build.sh to configure cross-compilation
+# Run ./build.sh -t mingw32
+
+# build directory, here all temp objects will be created (out-of-source-build)
+BLDDIR=$PWD/bldMinGw32
+# destination directory for 'make install', this folder can be distributed as
+# binary SDK.
+DISTDIR=$PWD/distMinGw32
+# Compiler toolchain configuration for CMake
+TOOLCHAIN=$PWD/toolchains/mingw/toolchain-i686-pc-mingw32.cmake
