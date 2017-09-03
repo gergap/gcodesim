@@ -90,6 +90,7 @@ float gvector_len(struct gvector *v)
 void gcode_ctx_init(struct gcode_ctx *ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
+    ctx->pos_absolute = true;
 }
 
 static void gcode_send_pos_cb(void)
