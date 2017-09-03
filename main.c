@@ -132,7 +132,6 @@ void gcode_callback(struct gcode_ctx *ctx)
 #endif
     struct voxel_pos bak;
 
-    //printf("New pos: %.2f, %.2f, %.2f\n", ctx->pos.x, ctx->pos.y, ctx->pos.z);
     g_tool->pos.x = (ctx->pos.x / g_resolution);
     if (g_x_mirror) g_tool->pos.x += g_workpart.width;
     g_tool->pos.y = (ctx->pos.y / g_resolution);
@@ -141,7 +140,16 @@ void gcode_callback(struct gcode_ctx *ctx)
     bak = g_tool->pos; // backup
     g_tool->pos.x -= g_tool->width/2;
     g_tool->pos.y -= g_tool->height/2;
-    //printf("New voxel pos: %i, %i, %i\n", g_tool->pos.x, g_tool->pos.y, g_tool->pos.z);
+
+    /* validate position */
+    if (g_tool->pos.x < 0 || g_tool->pos.x >= g_workpart.width ||
+        g_tool->pos.y < 0 || g_tool->pos.y >= g_workpart.height) {
+        /* note: it is normal to be outside in Z axis */
+        fprintf(stderr, "warning: position outside of workpart (%.04f/%.04f/%.04f)\n",
+                ctx->pos.x, ctx->pos.y, ctx->pos.z);
+    }
+
+    /* cut out material */
     voxel_space_difference(&g_workpart, g_tool);
     g_tool->pos = bak; // restore
 
