@@ -3,6 +3,7 @@ extension. See http://www.cnc-club.ru/forum/viewtopic.php?t=35
 
 The simulation can be generated this way:
 
+    cd path/to/gcode/bin
     ./gcodesim -W40 -H50 -t1:0.5 ../examples/arc_0001.gcode
 
 The demo.svg includes a star with filled area, which means all the area
