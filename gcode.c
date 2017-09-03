@@ -162,22 +162,22 @@ int gcode_arc_move(struct gcode_ctx *ctx, struct gvector *endpos, struct gvector
     dx = startpos.x - center->x;
     dy = startpos.y - center->y;
     s_alpha = atan2(dy, dx);
-    printf("start: dx=%f, dy=%f, alpha=%f (%f°)\n", dx, dy, s_alpha, RAD2DEG(s_alpha));
+    verbose(3, "start: dx=%f, dy=%f, alpha=%f (%f°)\n", dx, dy, s_alpha, RAD2DEG(s_alpha));
     /* compute end angle */
     dx = endpos->x - center->x;
     dy = endpos->y - center->y;
     e_alpha = atan2(dy, dx);
-    printf("end: dx=%f, dy=%f, alpha=%f (%f°)\n", dx, dy, e_alpha, RAD2DEG(e_alpha));
+    verbose(3, "end: dx=%f, dy=%f, alpha=%f (%f°)\n", dx, dy, e_alpha, RAD2DEG(e_alpha));
     /* compute steps angle: not atan2 returns a range from -PI:PI */
     if (mode == ARC_CW) {
         d_alpha = (s_alpha - e_alpha);
     } else {
         d_alpha = (e_alpha - s_alpha);
     }
-    printf("d_alpha=%f (%f°)\n", d_alpha, RAD2DEG(d_alpha));
+    verbose(3, "d_alpha=%f (%f°)\n", d_alpha, RAD2DEG(d_alpha));
     if (d_alpha < 0) {
         d_alpha += 2*M_PI;
-        printf("d_alpha(corrected)=%f (%f°)\n", d_alpha, RAD2DEG(d_alpha));
+        verbose(3, "d_alpha(corrected)=%f (%f°)\n", d_alpha, RAD2DEG(d_alpha));
     }
     /* correct number of steps from 360° to alpha */
     num_steps = num_steps * RAD2DEG(d_alpha) / 360;
