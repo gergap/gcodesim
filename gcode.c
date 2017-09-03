@@ -32,6 +32,12 @@ static int   g_header_written = 0;
 /* Write custom header after G90 has been detected. */
 static char g_custom_header[4096] = "";
 
+enum gcode_arc_mode {
+    ARC_NONE = 0,
+    ARC_CW,
+    ARC_CCW
+};
+
 /**
  * Verbose output.
  *
@@ -128,6 +134,71 @@ int gcode_linear_move(struct gcode_ctx *ctx, struct gvector *newpos)
     return ret;
 }
 
+int gcode_arc_move(struct gcode_ctx *ctx, struct gvector *endpos, struct gvector *center, enum gcode_arc_mode mode)
+{
+    int ret = 0;
+    struct gvector startpos = ctx->pos, v;
+    float radius = gvector_len(center);
+    float len = radius * 2 * M_PI;
+    float step_len = 0.05;
+    float s_alpha, e_alpha, d_alpha; /* start and end angles */
+    float alpha;
+    float dx, dy;
+    unsigned int i, num_steps;
+
+    verbose(2, "start pos =%.04f/%.04f/%.04f\n", startpos.x, startpos.y, startpos.z);
+    verbose(2, "end pos   =%.04f/%.04f/%.04f\n", endpos->x, endpos->y, endpos->z);
+
+    /* compute absolute center */
+    gvector_add(center, center, &startpos);
+    verbose(2, "center    =%.04f/%.04f/%.04f\n", center->x, center->y, center->z);
+
+    /* compute number of steps (for full circle) */
+    num_steps = len / step_len;
+    verbose(2, "num_steps=%u\n", num_steps);
+
+    /* compute start angle */
+    dx = startpos.x - center->x;
+    dy = startpos.y - center->y;
+    s_alpha = atan2(dy, dx);
+    printf("start: dx=%f, dy=%f, alpha=%f (%f°)\n", dx, dy, s_alpha, RAD2DEG(s_alpha));
+    /* compute end angle */
+    dx = endpos->x - center->x;
+    dy = endpos->y - center->y;
+    e_alpha = atan2(dy, dx);
+    printf("end: dx=%f, dy=%f, alpha=%f (%f°)\n", dx, dy, e_alpha, RAD2DEG(e_alpha));
+    /* compute steps angle: not atan2 returns a range from -PI:PI */
+    if (mode == ARC_CW) {
+        d_alpha = (s_alpha - e_alpha);
+    } else {
+        d_alpha = (e_alpha - s_alpha);
+    }
+    printf("d_alpha=%f (%f°)\n", d_alpha, RAD2DEG(d_alpha));
+    if (d_alpha < 0) {
+        d_alpha += 2*M_PI;
+        printf("d_alpha(corrected)=%f (%f°)\n", d_alpha, RAD2DEG(d_alpha));
+    }
+    /* correct number of steps from 360° to alpha */
+    num_steps = num_steps * RAD2DEG(d_alpha) / 360;
+    /* compute step angle */
+    d_alpha /= num_steps;
+    if (mode == ARC_CW) d_alpha = -d_alpha;
+
+    alpha = s_alpha;
+    for (i = 1; i < num_steps; ++i) {
+        alpha += d_alpha;
+        v.x = radius * cos(alpha);
+        v.y = radius * sin(alpha);
+        v.z = 0;
+        gvector_add(&ctx->pos, center, &v);
+        gcode_send_pos_cb(ctx);
+    }
+    ctx->pos = *endpos;
+    gcode_send_pos_cb(ctx);
+
+    return ret;
+}
+
 int gcode_parse_float(const char *line, const char *key, float *val)
 {
     char *find = strstr(line, key);
@@ -203,8 +274,67 @@ int gcode_parse_gcode(struct gcode_ctx *ctx, const char *line)
             if (g_output) fprintf(g_output, "%s", line);
         }
         break;
-    case 2: /* arc */
-    case 3: /* arc */
+    case 2: /* arc CW */
+        mode = ARC_CW;
+        /* implicit fall-through */
+    case 3: /* arc CCW */
+        if (mode == ARC_NONE) mode = ARC_CCW;
+        APPEND("G%02u", code);
+        if (gcode_parse_float(line, "X", &val) == 0) {
+            if (ctx->pos_absolute) {
+                newpos.x = val + g_offset_x;
+                APPEND(" X%.4f", newpos.x);
+            } else {
+                newpos.x += val;
+            }
+        }
+        if (gcode_parse_float(line, "Y", &val) == 0) {
+            if (ctx->pos_absolute) {
+                newpos.y = val + g_offset_y;
+                APPEND(" Y%.4f", newpos.y);
+            } else {
+                newpos.y += val;
+            }
+        }
+        if (gcode_parse_float(line, "Z", &val) == 0) {
+            if (ctx->pos_absolute) {
+                newpos.z = val + g_offset_z;
+                APPEND(" Z%.4f", newpos.z);
+            } else {
+                newpos.z += val;
+            }
+        }
+        /* note that IJK is always relative to starting pos */
+        center.x = 0;
+        center.y = 0;
+        center.z = 0;
+        if (gcode_parse_float(line, "I", &val) == 0) {
+            APPEND(" I%.4f", val);
+            center.x = val;
+        }
+        if (gcode_parse_float(line, "J", &val) == 0) {
+            APPEND(" J%.4f", val);
+            center.y = val;
+        }
+        if (gcode_parse_float(line, "K", &val) == 0) {
+            APPEND(" K%.4f", val);
+            center.z = val;
+        }
+        if (gcode_parse_float(line, "F", &val) == 0) {
+            ctx->feedrate = val;
+            APPEND(" F%.2f", val);
+        }
+        verbose(2, "Arc to X=%.2f, Y=%.2f, Z=%.2f (rel. center=%.2f/%.2f/%.2f)\n",
+                newpos.x, newpos.y, newpos.z, center.x, center.y, center.z);
+        gcode_arc_move(ctx, &newpos, &center, mode);
+        mode = ARC_NONE; /* reset mode */
+        if (ctx->pos_absolute) {
+            /* add offset */
+            if (g_output) fprintf(g_output, "%s\n", newline);
+        } else {
+            /* relative pos, take as-is */
+            if (g_output) fprintf(g_output, "%s", line);
+        }
         break;
     case 4: /* Dwell */
         verbose(1, "Pausing ignored. We want to do a quick simulation.\n");
@@ -268,7 +398,7 @@ int gcode_parse_gcode(struct gcode_ctx *ctx, const char *line)
         break;
     }
 
-    if (g_output && code != 0 && code != 1 && code != 92) {
+    if (g_output && code != 0 && code != 1 && code != 2 && code != 3 && code != 92) {
         fprintf(g_output, "%s", line);
         if (code == 90 && g_header_written == 0) {
             fprintf(g_output, "%s", g_custom_header);

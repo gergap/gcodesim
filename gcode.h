@@ -20,6 +20,9 @@
 
 #include <stdbool.h>
 
+#define RAD2DEG(x) ((x) * 180.0 / M_PI)
+#define DEG2RAD(x) ((x) * M_PI / 180.0)
+
 struct gvector {
     float x, y, z;
 };
