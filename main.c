@@ -48,7 +48,7 @@ void create_etch_tool(struct voxel_space *tool, float diameter)
 
     w = diameter / g_resolution;
     h = diameter / g_resolution;
-    t = 2 / g_resolution;
+    t = 1 / g_resolution;
 
     voxel_space_clear(tool);
 
@@ -90,7 +90,7 @@ void create_drill_tool(struct voxel_space *tool, float diameter)
 
     w = diameter / g_resolution;
     h = diameter / g_resolution;
-    t = 2 / g_resolution;
+    t = 1 / g_resolution;
 
     ret = voxel_space_init(tool, w, h, t);
     if (ret != 0) {
@@ -278,6 +278,10 @@ void usage(const char *appname)
     fprintf(stderr, "  -H: Specifies PCB height in mm (default=80mm)\n");
     fprintf(stderr, "  -r: Specifies size of one voxel in mm (default=0.1mm)\n");
     fprintf(stderr, "  -t: Specifies tool index to use (if no tool selection is in the Gcode)\n");
+    fprintf(stderr, "      arg: <tool_index>[:<diameter>[<type>]]\n");
+    fprintf(stderr, "      example: -t 1:3d means tool1=drill tool with 3mm diamter\n");
+    fprintf(stderr, "      diameter: unit mm\n");
+    fprintf(stderr, "      type: d=drill tool, c=cone shaped etch tool (default=d)\n");
     fprintf(stderr, "  -o: Specifies output filname, to rewrite the given GCode files\n");
     fprintf(stderr, "  -c: Load custom header to insert in output file\n");
     fprintf(stderr, "  -x: Applies given offset in mm at X axis\n");
@@ -300,6 +304,8 @@ int main(int argc, char *argv[])
     float offset_x = 0;
     float offset_y = 0;
     float offset_z = 0;
+    float diameter = 0;
+    char tool_type = 'd'; /* d=drill, c=cone */
     unsigned int x;
     unsigned int y;
     unsigned int z;
@@ -334,14 +340,36 @@ int main(int argc, char *argv[])
             g_x_mirror = 1;
             break;
         case 't':
-            tool = atoi(optarg);
+            ret = sscanf(optarg, "%i:%f%c", &tool, &diameter, &tool_type);
+            if (ret < 1) {
+                fprintf(stderr, "error: could not parse tool option\n");
+                exit(EXIT_FAILURE);
+            }
             switch (tool) {
             case 1:
                 g_tool = &g_tool1;
+                g_tool1_d = diameter;
                 break;
             case 2:
                 g_tool = &g_tool2;
+                g_tool1_d = diameter;
                 break;
+            default:
+                fprintf(stderr, "error: there is not tool with index %i\n", tool);
+                exit(EXIT_FAILURE);
+            }
+            if (ret >= 2) {
+                if (tool_type == 'd') {
+                    printf("Creating drill tool with d=%f mm.\n", diameter);
+                    create_drill_tool(g_tool, diameter);
+                } else {
+                    printf("Creating etch tool (cone) with d=%f mm.\n", diameter);
+                    create_etch_tool(g_tool, diameter);
+                }
+            }
+            if (g_tool->data == NULL) {
+                fprintf(stderr, "error: tool %i has not been created yet.\n", tool);
+                exit(EXIT_FAILURE);
             }
             break;
         case 'o':
