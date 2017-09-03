@@ -28,6 +28,7 @@ static const char *g_ofilename = NULL;
 static float g_offset_x, g_offset_y, g_offset_z;
 static int   g_verbose = 0;
 static int   g_header_written = 0;
+extern volatile int g_terminate;
 
 /* Write custom header after G90 has been detected. */
 static char g_custom_header[4096] = "";
@@ -518,7 +519,7 @@ int gcode_parse(const char *filename, void (*newpos_cb)(struct gcode_ctx *ctx), 
     FILE *f;
     unsigned int code;
     float x, y, z, F;
-    int ret;
+    int ret, lineno = 0;
     struct gcode_ctx ctx;
 
     f = fopen(filename, "r");
@@ -536,11 +537,15 @@ int gcode_parse(const char *filename, void (*newpos_cb)(struct gcode_ctx *ctx), 
     ctx.newpos_cb     = newpos_cb;
     ctx.toolchange_cb = toolchange_cb;
 
-    while (1) {
+    while (!g_terminate) {
         result = fgets(line, sizeof(line), f);
         if (result == NULL) break;
+        lineno++;
 
         ret = gcode_parse_line(&ctx, line);
+    }
+    if (g_terminate) {
+        printf("Stopped parsing on user request at line %i\n", lineno);
     }
 
     fclose(f);

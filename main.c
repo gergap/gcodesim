@@ -22,6 +22,10 @@
 #include "voxelspace.h"
 #include "gcode.h"
 #include "version.h"
+#ifdef __linux__
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 /* By enabling this define the tool generates output for
  * rendering an animation using POVRay.
@@ -29,7 +33,7 @@
 //#define POVRAY_ANIM_OUTPUT
 
 #define sqr(x) (x)*(x)
-static float g_resolution = 0.03; /* mm */
+static float g_resolution = 0.05; /* mm */
 /* eagle pcbcode can generate negative coordinates when not mirroring.
  * We compensate this by adding the PCB width when this flag is set.
  */
@@ -121,6 +125,27 @@ static struct voxel_space g_workpart;
 static struct voxel_space g_tool1;
 static struct voxel_space g_tool2;
 static struct voxel_space *g_tool = &g_tool1;
+volatile int              g_terminate = 0;
+
+#ifdef __linux__
+void signal_handler(int signo)
+{
+    switch (signo) {
+    case SIGALRM:
+        /* save current state periodically */
+        printf("Saving current state to workpart.pgm.\n");
+        voxel_space_to_pgm(&g_workpart, "workpart.pgm");
+        alarm(5);
+        break;
+    case SIGINT:
+    case SIGTERM:
+        /* save current state when program is terminated */
+        printf("Receive signal %i. Terminating now.\n", signo);
+        g_terminate = 1;
+        break;
+    }
+}
+#endif
 
 void gcode_callback(struct gcode_ctx *ctx)
 {
@@ -427,7 +452,18 @@ int main(int argc, char *argv[])
     //voxel_space_to_ppm(&g_tool1, "etch");
 
     voxel_space_set_all(&g_workpart);
+#ifdef POVRAY_ANIM_OUTPUT
     voxel_space_to_pgm(&g_workpart, "povray/workpart0000.pgm");
+#endif
+
+#ifdef __linux__
+    /* install some signal handlers */
+    signal(SIGALRM, signal_handler);
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+    alarm(5);
+#endif
+
 
     /* parse all given gcode files */
     g_file_index = 1;
@@ -450,6 +486,7 @@ int main(int argc, char *argv[])
         gcode_parse(filename, gcode_callback, gcode_toolchange_callback);
         g_file_index++;
     }
+    printf("Saving result to workpart.pgm.\n");
     voxel_space_to_pgm(&g_workpart, "workpart.pgm");
     //voxel_space_to_d3f(&g_workpart, "workpart.d3f");
 

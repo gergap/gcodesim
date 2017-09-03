@@ -5,6 +5,7 @@
 static struct gvector g_test_data[360];
 static struct gvector g_center = { 50, 50, 0 };
 static int g_start, g_end, g_control, g_mode;
+volatile int g_terminate = 0;
 
 static int gvector_fuzzy_compare(struct gvector *a, struct gvector *b, float epsilon)
 {
