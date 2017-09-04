@@ -12,6 +12,8 @@ if (ENABLE_POVRAY)
     add_definitions(-DPOVRAY_ANIM_OUTPUT)
 endif()
 
+set(CMAKE_INCLUDE_CURRENT_DIR on)
+
 set(SOURCES main.c voxelspace.c gcode.c)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
