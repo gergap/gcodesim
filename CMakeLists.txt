@@ -17,6 +17,7 @@ install(FILES gcode/demo.gcode gcode/custom_bottom.gcode gcode/custom_top.gcode 
 # enable Unit Testing
 include(CTest)
 if (BUILD_TESTING)
+    add_subdirectory(test)
     #############
     # GOOD Cases:
     #############

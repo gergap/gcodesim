@@ -22,6 +22,10 @@
 #include "voxelspace.h"
 #include "gcode.h"
 #include "version.h"
+#ifdef __linux__
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 /* By enabling this define the tool generates output for
  * rendering an animation using POVRay.
@@ -29,7 +33,7 @@
 //#define POVRAY_ANIM_OUTPUT
 
 #define sqr(x) (x)*(x)
-static float g_resolution = 0.03; /* mm */
+static float g_resolution = 0.05; /* mm */
 /* eagle pcbcode can generate negative coordinates when not mirroring.
  * We compensate this by adding the PCB width when this flag is set.
  */
@@ -48,7 +52,7 @@ void create_etch_tool(struct voxel_space *tool, float diameter)
 
     w = diameter / g_resolution;
     h = diameter / g_resolution;
-    t = 2 / g_resolution;
+    t = 1 / g_resolution;
 
     voxel_space_clear(tool);
 
@@ -90,7 +94,7 @@ void create_drill_tool(struct voxel_space *tool, float diameter)
 
     w = diameter / g_resolution;
     h = diameter / g_resolution;
-    t = 2 / g_resolution;
+    t = 1 / g_resolution;
 
     ret = voxel_space_init(tool, w, h, t);
     if (ret != 0) {
@@ -121,6 +125,27 @@ static struct voxel_space g_workpart;
 static struct voxel_space g_tool1;
 static struct voxel_space g_tool2;
 static struct voxel_space *g_tool = &g_tool1;
+volatile int              g_terminate = 0;
+
+#ifdef __linux__
+void signal_handler(int signo)
+{
+    switch (signo) {
+    case SIGALRM:
+        /* save current state periodically */
+        printf("Saving current state to workpart.pgm.\n");
+        voxel_space_to_pgm(&g_workpart, "workpart.pgm");
+        alarm(5);
+        break;
+    case SIGINT:
+    case SIGTERM:
+        /* save current state when program is terminated */
+        printf("Receive signal %i. Terminating now.\n", signo);
+        g_terminate = 1;
+        break;
+    }
+}
+#endif
 
 void gcode_callback(struct gcode_ctx *ctx)
 {
@@ -132,7 +157,6 @@ void gcode_callback(struct gcode_ctx *ctx)
 #endif
     struct voxel_pos bak;
 
-    //printf("New pos: %.2f, %.2f, %.2f\n", ctx->pos.x, ctx->pos.y, ctx->pos.z);
     g_tool->pos.x = (ctx->pos.x / g_resolution);
     if (g_x_mirror) g_tool->pos.x += g_workpart.width;
     g_tool->pos.y = (ctx->pos.y / g_resolution);
@@ -141,7 +165,16 @@ void gcode_callback(struct gcode_ctx *ctx)
     bak = g_tool->pos; // backup
     g_tool->pos.x -= g_tool->width/2;
     g_tool->pos.y -= g_tool->height/2;
-    //printf("New voxel pos: %i, %i, %i\n", g_tool->pos.x, g_tool->pos.y, g_tool->pos.z);
+
+    /* validate position */
+    if (g_tool->pos.x < 0 || g_tool->pos.x >= g_workpart.width ||
+        g_tool->pos.y < 0 || g_tool->pos.y >= g_workpart.height) {
+        /* note: it is normal to be outside in Z axis */
+        fprintf(stderr, "warning: position outside of workpart (%.04f/%.04f/%.04f)\n",
+                ctx->pos.x, ctx->pos.y, ctx->pos.z);
+    }
+
+    /* cut out material */
     voxel_space_difference(&g_workpart, g_tool);
     g_tool->pos = bak; // restore
 
@@ -278,6 +311,10 @@ void usage(const char *appname)
     fprintf(stderr, "  -H: Specifies PCB height in mm (default=80mm)\n");
     fprintf(stderr, "  -r: Specifies size of one voxel in mm (default=0.1mm)\n");
     fprintf(stderr, "  -t: Specifies tool index to use (if no tool selection is in the Gcode)\n");
+    fprintf(stderr, "      arg: <tool_index>[:<diameter>[<type>]]\n");
+    fprintf(stderr, "      example: -t 1:3d means tool1=drill tool with 3mm diamter\n");
+    fprintf(stderr, "      diameter: unit mm\n");
+    fprintf(stderr, "      type: d=drill tool, c=cone shaped etch tool (default=d)\n");
     fprintf(stderr, "  -o: Specifies output filname, to rewrite the given GCode files\n");
     fprintf(stderr, "  -c: Load custom header to insert in output file\n");
     fprintf(stderr, "  -x: Applies given offset in mm at X axis\n");
@@ -300,6 +337,8 @@ int main(int argc, char *argv[])
     float offset_x = 0;
     float offset_y = 0;
     float offset_z = 0;
+    float diameter = 0;
+    char tool_type = 'd'; /* d=drill, c=cone */
     unsigned int x;
     unsigned int y;
     unsigned int z;
@@ -334,14 +373,36 @@ int main(int argc, char *argv[])
             g_x_mirror = 1;
             break;
         case 't':
-            tool = atoi(optarg);
+            ret = sscanf(optarg, "%i:%f%c", &tool, &diameter, &tool_type);
+            if (ret < 1) {
+                fprintf(stderr, "error: could not parse tool option\n");
+                exit(EXIT_FAILURE);
+            }
             switch (tool) {
             case 1:
                 g_tool = &g_tool1;
+                g_tool1_d = diameter;
                 break;
             case 2:
                 g_tool = &g_tool2;
+                g_tool1_d = diameter;
                 break;
+            default:
+                fprintf(stderr, "error: there is not tool with index %i\n", tool);
+                exit(EXIT_FAILURE);
+            }
+            if (ret >= 2) {
+                if (tool_type == 'd') {
+                    printf("Creating drill tool with d=%f mm.\n", diameter);
+                    create_drill_tool(g_tool, diameter);
+                } else {
+                    printf("Creating etch tool (cone) with d=%f mm.\n", diameter);
+                    create_etch_tool(g_tool, diameter);
+                }
+            }
+            if (g_tool->data == NULL) {
+                fprintf(stderr, "error: tool %i has not been created yet.\n", tool);
+                exit(EXIT_FAILURE);
             }
             break;
         case 'o':
@@ -391,7 +452,18 @@ int main(int argc, char *argv[])
     //voxel_space_to_ppm(&g_tool1, "etch");
 
     voxel_space_set_all(&g_workpart);
+#ifdef POVRAY_ANIM_OUTPUT
     voxel_space_to_pgm(&g_workpart, "povray/workpart0000.pgm");
+#endif
+
+#ifdef __linux__
+    /* install some signal handlers */
+    signal(SIGALRM, signal_handler);
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+    alarm(5);
+#endif
+
 
     /* parse all given gcode files */
     g_file_index = 1;
@@ -414,6 +486,7 @@ int main(int argc, char *argv[])
         gcode_parse(filename, gcode_callback, gcode_toolchange_callback);
         g_file_index++;
     }
+    printf("Saving result to workpart.pgm.\n");
     voxel_space_to_pgm(&g_workpart, "workpart.pgm");
     //voxel_space_to_d3f(&g_workpart, "workpart.d3f");
 
